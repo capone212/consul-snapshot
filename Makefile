@@ -32,7 +32,7 @@ gox:
 
 build-all: test
 	which gox || make gox
-	gox -arch="386 amd64 arm" -os="linux windows" github.com/pshima/consul-snapshot
+	gox -arch="386 amd64 arm" -os="linux windows" -output="pkg/{{.OS}}_{{.Arch}}/consul-snapshot" github.com/pshima/consul-snapshot
 
 install: consul-snapshot
 	cp consul-snapshot /usr/local/bin/consul-snapshot
