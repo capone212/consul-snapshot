@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -80,18 +81,18 @@ func Runner(version string) int {
 	client := &consul.Consul{Client: *consul.Client()}
 
 	if conf.Acceptance {
-		doWork(conf, client)
+		DoWork(conf, client)
 	} else {
 		log.Printf("[DEBUG] Backup starting on interval: %v", conf.BackupInterval)
 		ticker := time.NewTicker(conf.BackupInterval)
 		for range ticker.C {
-			doWork(conf, client)
+			DoWork(conf, client)
 		}
 	}
 	return 0
 }
 
-func doWork(conf *config.Config, client *consul.Consul) {
+func DoWork(conf *config.Config, client *consul.Consul) {
 
 	b := &Backup{
 		Config: conf,
@@ -167,8 +168,10 @@ func doWork(conf *config.Config, client *consul.Consul) {
 		log.Print("[INFO] Skipping remote backup during testing")
 		log.Print("[INFO] Skipping post processing during testing")
 	} else {
-		log.Print("[INFO] Writing Backup to Remote File")
-		b.writeBackupRemote()
+		if !conf.SkipRemote {
+			log.Print("[INFO] Writing Backup to Remote File")
+			b.writeBackupRemote()
+		}
 		log.Print("[INFO] Running post processing")
 		b.postProcess()
 	}
@@ -210,6 +213,8 @@ func (b *Backup) preProcess() {
 	var prefix string
 	if b.Config.Acceptance {
 		prefix = "acceptancetest"
+	} else if len(b.Config.BackupToFile) != 0 {
+		prefix = strings.TrimSuffix(b.Config.BackupToFile, filepath.Ext(b.Config.BackupToFile))
 	} else {
 		prefix = fmt.Sprintf("%s.consul.snapshot.%s", b.Config.Hostname, startString)
 	}
@@ -283,6 +288,8 @@ func (b *Backup) compressStagedBackup() {
 	var finalfile string
 	if b.Config.Acceptance {
 		finalfile = "acceptancetest.tar.gz"
+	} else if len(b.Config.BackupToFile) != 0 {
+		finalfile = b.Config.BackupToFile
 	} else {
 		finalfile = fmt.Sprintf("%s.consul.snapshot.%s.tar.gz", b.Config.Hostname, startString)
 	}
@@ -336,26 +343,28 @@ func (b *Backup) writeBackupRemote() {
 // Run post processing on the backup, acking the key and removing and temp files.
 // There are no tests for the remote operation.
 func (b *Backup) postProcess() {
-	// Mark a key in consul for our last backup time.
-	writeOpt := &consulapi.WriteOptions{}
-	startstring := fmt.Sprintf("%v", b.StartTime)
+	if !b.Config.SkipRemote {
+		// Mark a key in consul for our last backup time.
+		writeOpt := &consulapi.WriteOptions{}
+		startstring := fmt.Sprintf("%v", b.StartTime)
 
-	var err error
+		var err error
 
-	lastbackup := &consulapi.KVPair{Key: "service/consul-snapshot/lastbackup", Value: []byte(startstring)}
-	_, err = b.Client.Client.KV().Put(lastbackup, writeOpt)
-	if err != nil {
-		log.Fatalf("[ERR] Failed writing last backup timestamp to consul: %v", err)
-	}
+		lastbackup := &consulapi.KVPair{Key: "service/consul-snapshot/lastbackup", Value: []byte(startstring)}
+		_, err = b.Client.Client.KV().Put(lastbackup, writeOpt)
+		if err != nil {
+			log.Fatalf("[ERR] Failed writing last backup timestamp to consul: %v", err)
+		}
 
-	// Remove the compressed archive
-	err = os.Remove(b.FullFilename)
-	if err != nil {
-		log.Printf("Unable to remove temporary backup file: %v", err)
+		// Remove the compressed archive
+		err = os.Remove(b.FullFilename)
+		if err != nil {
+			log.Printf("Unable to remove temporary backup file: %v", err)
+		}
 	}
 
 	// Remove the staging path
-	err = os.RemoveAll(b.LocalFilePath)
+	err := os.RemoveAll(b.LocalFilePath)
 	if err != nil {
 		log.Printf("Unable to remove temporary backup file: %v", err)
 	}

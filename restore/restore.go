@@ -52,6 +52,15 @@ func Runner(restorepath string) int {
 	return 0
 }
 
+func RestoreSnaphot(filePath string) int {
+	log.Printf("[DEBUG] Starting restoring snapshot from file %v", filePath)
+	consulClient := &consul.Consul{Client: *consul.Client()}
+
+	conf := &config.Config{SkipRemote: true}
+	doWork(conf, consulClient, filePath)
+	return 0
+}
+
 // doWork this is the main function to start a restore
 func doWork(conf *config.Config, c *consul.Consul, restorePath string) {
 	restore := &Restore{}
@@ -64,6 +73,8 @@ func doWork(conf *config.Config, c *consul.Consul, restorePath string) {
 	// if we are running an Acceptance test then we need to restore from local
 	if conf.Acceptance {
 		restore.LocalFilePath = fmt.Sprintf("%v/acceptancetest.tar.gz", conf.TmpDir)
+	} else if conf.SkipRemote {
+		restore.LocalFilePath = restorePath
 	} else {
 		getRemoteBackup(restore, conf)
 	}
@@ -102,7 +113,7 @@ func doWork(conf *config.Config, c *consul.Consul, restorePath string) {
 	restoreKV(restore, c)
 	restorePQs(restore, c)
 	restoreACLs(restore, c)
-
+	restore.cleanTempDir()
 	log.Print("[INFO] Restore completed.")
 
 }
@@ -147,6 +158,11 @@ func (r *Restore) extractBackup() {
 	archiver.UntarGz(r.LocalFilePath, dest)
 }
 
+func (r *Restore) cleanTempDir() {
+	extractedpath := strings.TrimSuffix(r.LocalFilePath, filepath.Ext(r.LocalFilePath))
+	os.RemoveAll(extractedpath)
+}
+
 // parsev1data is used if we have detected the backup has no metadata
 // then it is likely a v1 style backup, so open it, gunzip it, and
 // then unmarshall the contents and return them as kvpairs.
@@ -183,8 +199,12 @@ func parsev1data(path string) (consulapi.KVPairs, error) {
 func (r *Restore) inspectBackup() {
 	// first we need to fix the pathing to the extracted location
 	var extractedpath string
-	extractedpath = strings.Replace(r.LocalFilePath, ".tar.gz", "", 1)
-	extractedpath = strings.Replace(extractedpath, ".gz", "", 1)
+	if !r.Config.SkipRemote {
+		extractedpath = strings.Replace(r.LocalFilePath, ".tar.gz", "", 1)
+		extractedpath = strings.Replace(extractedpath, ".gz", "", 1)
+	} else {
+		extractedpath = strings.TrimSuffix(r.LocalFilePath, filepath.Ext(r.LocalFilePath))
+	}
 	r.ExtractedPath = extractedpath
 
 	metaPath := filepath.Join(r.ExtractedPath, "meta.json")

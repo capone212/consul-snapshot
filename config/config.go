@@ -19,12 +19,14 @@ type Config struct {
 	Hostname               string
 	BackupInterval         time.Duration
 	TmpDir                 string
+	SkipRemote             bool
 	Acceptance             bool
 	Version                string
 	Encryption             string
 	ObjectPrefix           string
 	S3ServerSideEncryption string
 	S3KmsKeyID             string
+	BackupToFile           string
 }
 
 // When starting, just set the hostname

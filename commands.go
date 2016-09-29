@@ -45,6 +45,7 @@ func init() {
 
 	CommandsInclude = []string{
 		"backup",
+		"snapshot",
 		"restore",
 		"version",
 	}
@@ -52,6 +53,12 @@ func init() {
 	Commands = map[string]cli.CommandFactory{
 		"backup": func() (cli.Command, error) {
 			return &command.BackupCommand{
+				Meta:    meta,
+				Version: formattedVersion(),
+			}, nil
+		},
+		"snapshot": func() (cli.Command, error) {
+			return &command.SnapshotCommand{
 				Meta:    meta,
 				Version: formattedVersion(),
 			}, nil

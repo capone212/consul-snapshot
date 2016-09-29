@@ -13,9 +13,14 @@ type RestoreCommand struct {
 
 // Run the restore through restore.Runner
 func (c *RestoreCommand) Run(args []string) int {
-	if len(args) != 1 {
+
+	if len(args) < 1 {
 		c.UI.Error("You need to specify a restore file path from base of bucket")
 		return 1
+	}
+
+	if args[0] == "snapshot" {
+		return restore.RestoreSnaphot(args[1])
 	}
 
 	c.UI.Info(fmt.Sprintf("v%v: Starting Consul Snapshot", c.Version))
@@ -32,6 +37,7 @@ func (c *RestoreCommand) Synopsis() string {
 func (c *RestoreCommand) Help() string {
 	return `
 Usage: consul-snapshot restore filename.backup
+Usage: consul-snapshot restore snapshot path/to/snaphot.backup
 
 Starts a restore process
 `
