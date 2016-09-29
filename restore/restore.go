@@ -52,7 +52,8 @@ func Runner(restorepath string) int {
 	return 0
 }
 
-func RestoreSnaphot(filePath string) int {
+//SnapshotRestore restores snapshot from file
+func SnapshotRestore(filePath string) int {
 	log.Printf("[DEBUG] Starting restoring snapshot from file %v", filePath)
 	consulClient := &consul.Consul{Client: *consul.Client()}
 

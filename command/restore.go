@@ -20,7 +20,7 @@ func (c *RestoreCommand) Run(args []string) int {
 	}
 
 	if args[0] == "snapshot" {
-		return restore.RestoreSnaphot(args[1])
+		return restore.SnapshotRestore(args[1])
 	}
 
 	c.UI.Info(fmt.Sprintf("v%v: Starting Consul Snapshot", c.Version))

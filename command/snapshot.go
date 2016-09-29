@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 )
 
-// BackupCommand for running backups
+//SnapshotCommand for tacking backups to file
 type SnapshotCommand struct {
 	Meta
 	Version string
 }
 
-// Get one time backup to file
+//Run Get one time backup to file
 func (c *SnapshotCommand) Run(args []string) int {
 	c.UI.Info(fmt.Sprintf("v%v: Starting Consul Snapshot...", c.Version))
 	c.UI.Info(fmt.Sprintf("Passed args are: %v", args))

@@ -92,6 +92,7 @@ func Runner(version string) int {
 	return 0
 }
 
+//DoWork Runs single backup
 func DoWork(conf *config.Config, client *consul.Consul) {
 
 	b := &Backup{
