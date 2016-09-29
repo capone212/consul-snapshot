@@ -37,7 +37,7 @@ func (c *RestoreCommand) Synopsis() string {
 func (c *RestoreCommand) Help() string {
 	return `
 Usage: consul-snapshot restore filename.backup
-Usage: consul-snapshot restore snapshot path/to/snaphot.backup
+Usage: consul-snapshot restore snapshot path/to/snapshot.backup
 
 Starts a restore process
 `

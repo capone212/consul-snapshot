@@ -40,7 +40,7 @@ func (c *SnapshotCommand) Synopsis() string {
 // Help for the command
 func (c *SnapshotCommand) Help() string {
 	return `
-Usage: consul-snapshot snapshot path/to/snaphot.backup
+Usage: consul-snapshot snapshot path/to/snapshot.backup
 
 Makes one shot backup to local folder.
 `
